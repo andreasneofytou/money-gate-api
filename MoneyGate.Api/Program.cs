@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MoneyGate.Api.Data;
 using MoneyGate.Api;
@@ -18,6 +19,22 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
             optionsBuilder.EnableRetryOnFailure();
             optionsBuilder.MigrationsAssembly("MoneyGate.Api");
         });
+});
+
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var errors = context.ModelState
+            .Where(e => e.Value.Errors.Count > 0)
+            .Select(e => new
+            {
+                Field = e.Key,
+                Errors = e.Value.Errors.Select(e => e.ErrorMessage)
+            });
+
+        return new UnprocessableEntityObjectResult(errors);
+    };
 });
 
 builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
